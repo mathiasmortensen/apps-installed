@@ -184,3 +184,8 @@ if (-not [string]::IsNullOrWhiteSpace($ApiUrl) -and -not [string]::IsNullOrWhite
 } else {
     Write-Host "ApiUrl og/eller Token mangler - data sendes ikke til API'et." -ForegroundColor Yellow
 }
+
+Write-Host "Venter 5 sekunder før output-filen slettes..."
+Start-Sleep -Seconds 5
+Remove-Item -Path $outputPath -Force
+Write-Host "Output-filen '$outputPath' er blevet slettet."
