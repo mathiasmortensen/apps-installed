@@ -1,3 +1,7 @@
+$skrivebord = [Environment]::GetFolderPath("Desktop")
+$data | ConvertTo-Json | Out-File "$skrivebord\output.json"
+
+
 $ErrorActionPreference = "Stop"
 
 $outputPath = "./member-programs.json"
