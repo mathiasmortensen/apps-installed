@@ -1,10 +1,9 @@
-$skrivebord = [Environment]::GetFolderPath("Desktop")
-$data | ConvertTo-Json | Out-File "$skrivebord\output.json"
-
-
 $ErrorActionPreference = "Stop"
 
-$outputPath = "./member-programs.json"
+# Dynamisk sti til skrivebordet (Tvinges som rå tekststreng)
+$desktopPath = [Environment]::GetFolderPath("Desktop").ToString()
+$outputPath = "$desktopPath\member-programs.json"
+
 
 $sources = @(
   @{
@@ -76,7 +75,6 @@ function Test-ValidInstallDate {
   }
   catch {
     # Bevar rå værdi, men marker den ikke som parsed dato.
-    # Din nuværende DB har install_date som string, så vi kan stadig gemme den.
     return $text
   }
 }
@@ -101,8 +99,6 @@ function Test-NoiseProgram {
     return $true
   }
 
-  # Bevidst konservativ filtrering.
-  # Runtimes kan være relevante for IT-overblik, så filtrér kun hvis du vil vise "bruger-apps".
   return $false
 }
 
@@ -129,7 +125,6 @@ $programs = foreach ($source in $sources) {
 }
 
 # Dedup på samme nøgle som Prisma unique constraint.
-# Brug ikke kun name/version, fordi publisher også er del af din unique constraint.
 $deduped = $programs |
   Where-Object { $_.name } |
   Sort-Object name, version, publisher, source, registry_key |
@@ -139,6 +134,7 @@ $deduped = $programs |
   } |
   Sort-Object name, version, publisher
 
+# Konverter til JSON og gem direkte på skrivebordet med UTF8-kodning
 $deduped |
   ConvertTo-Json -Depth 4 |
   Out-File $outputPath -Encoding UTF8
