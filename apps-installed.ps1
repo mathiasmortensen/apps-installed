@@ -1,3 +1,12 @@
+[CmdletBinding()]
+param (
+    [Parameter(Mandatory=$false)]
+    [string]$Token,
+
+    [Parameter(Mandatory=$false)]
+    [string]$ApiUrl
+)
+
 $ErrorActionPreference = "Stop"
 
 # Find brugerens faktiske Desktop-mappe
@@ -149,9 +158,29 @@ $deduped = $programs |
 
 # Konverter til JSON.
 # @($deduped) sikrer, at output behandles som en samling.
+# Vi bruger ConvertTo-Json -Compress til API-kaldet, da en pæn formatering ikke er nødvendig for maskiner, 
+# men vi gemmer stadig en pæn udgave på disken, hvis det ønskes.
 $json = @($deduped) | ConvertTo-Json -Depth 4
 
 # Gem direkte på skrivebordet med UTF8-kodning.
 $json | Out-File -LiteralPath $outputPath -Encoding UTF8
-
 Write-Host "Wrote $($deduped.Count) programs to $outputPath"
+
+if (-not [string]::IsNullOrWhiteSpace($ApiUrl) -and -not [string]::IsNullOrWhiteSpace($Token)) {
+    Write-Host "Poster data til API: $ApiUrl"
+    
+    $headers = @{
+        "Authorization" = "Bearer $Token"
+        "Content-Type"  = "application/json"
+    }
+
+    try {
+        $response = Invoke-RestMethod -Uri $ApiUrl -Method Post -Headers $headers -Body $json
+        Write-Host "Upload fuldført med succes!" -ForegroundColor Green
+    }
+    catch {
+        Write-Error "Kunne ikke uploade til API: $_"
+    }
+} else {
+    Write-Host "ApiUrl og/eller Token mangler - data sendes ikke til API'et." -ForegroundColor Yellow
+}
