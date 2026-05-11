@@ -1,9 +1,22 @@
 $ErrorActionPreference = "Stop"
 
-# Dynamisk sti til skrivebordet (Tvinges som rå tekststreng)
-$desktopPath = [Environment]::GetFolderPath("Desktop").ToString()
-$outputPath = "$desktopPath\member-programs.json"
+# Find brugerens faktiske Desktop-mappe
+$desktopPath = [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
 
+if ([string]::IsNullOrWhiteSpace($desktopPath)) {
+  throw "Could not resolve Desktop path."
+}
+
+if (-not (Test-Path -LiteralPath $desktopPath)) {
+  throw "Desktop path does not exist: $desktopPath"
+}
+
+$outputPath = Join-Path $desktopPath "member-programs.json"
+
+Write-Host "User:         $([Security.Principal.WindowsIdentity]::GetCurrent().Name)"
+Write-Host "Desktop path: $desktopPath"
+Write-Host "Output path:  $outputPath"
+Write-Host "Current dir:  $PWD"
 
 $sources = @(
   @{
@@ -103,7 +116,7 @@ function Test-NoiseProgram {
 }
 
 $programs = foreach ($source in $sources) {
-  Get-ItemProperty $source.Path -ErrorAction SilentlyContinue |
+  Get-ItemProperty -Path $source.Path -ErrorAction SilentlyContinue |
     Where-Object {
       $_.DisplayName -and
       -not (Test-NoiseProgram `
@@ -134,9 +147,11 @@ $deduped = $programs |
   } |
   Sort-Object name, version, publisher
 
-# Konverter til JSON og gem direkte på skrivebordet med UTF8-kodning
-$deduped |
-  ConvertTo-Json -Depth 4 |
-  Out-File $outputPath -Encoding UTF8
+# Konverter til JSON.
+# @($deduped) sikrer, at output behandles som en samling.
+$json = @($deduped) | ConvertTo-Json -Depth 4
+
+# Gem direkte på skrivebordet med UTF8-kodning.
+$json | Out-File -LiteralPath $outputPath -Encoding UTF8
 
 Write-Host "Wrote $($deduped.Count) programs to $outputPath"
