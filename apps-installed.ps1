@@ -11,7 +11,7 @@ if (-not (Test-Path -LiteralPath $desktopPath)) {
   throw "Desktop path does not exist: $desktopPath"
 }
 
-$outputPath = Join-Path $desktopPath "member-programs.json"
+$outputPath = Join-Path $desktopPath "apps-installeret.json"
 
 Write-Host "User:         $([Security.Principal.WindowsIdentity]::GetCurrent().Name)"
 Write-Host "Desktop path: $desktopPath"
