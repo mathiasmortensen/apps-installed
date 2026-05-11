@@ -171,15 +171,31 @@ if (-not [string]::IsNullOrWhiteSpace($ApiUrl) -and -not [string]::IsNullOrWhite
     
     $headers = @{
         "Authorization" = "Bearer $Token"
-        "Content-Type"  = "application/json"
+        "Content-Type"  = "application/json; charset=utf-8"
     }
 
+    # Debug: vis hvad der bliver sendt
+    Write-Host "Request Body (første 500 chars):" -ForegroundColor Cyan
+    Write-Host $json.Substring(0, [Math]::Min(500, $json.Length)) -ForegroundColor Gray
+    Write-Host "Antal programmer: $($deduped.Count)" -ForegroundColor Cyan
+
     try {
-        $response = Invoke-RestMethod -Uri $ApiUrl -Method Post -Headers $headers -Body $json
-        Write-Host "Upload fuldført med succes!" -ForegroundColor Green
+        $response = Invoke-RestMethod -Uri $ApiUrl -Method Post -Headers $headers -Body $json -ErrorAction Stop
+        
+        Write-Host "API Response Status: OK" -ForegroundColor Green
+        Write-Host "Response data:" -ForegroundColor Cyan
+        Write-Host ($response | ConvertTo-Json -Depth 2) -ForegroundColor Gray
     }
     catch {
-        Write-Error "Kunne ikke uploade til API: $_"
+        Write-Host "ERROR ved API-kald:" -ForegroundColor Red
+        Write-Host "Status Code: $($_.Exception.Response.StatusCode)" -ForegroundColor Red
+        Write-Host "Response: $($_.Exception.Response | ConvertTo-Json -Depth 2)" -ForegroundColor Red
+        Write-Host "Error Message: $_" -ForegroundColor Red
+        
+        # Gem JSON til inspektion
+        $json | Out-File -LiteralPath "$outputPath.failed" -Encoding UTF8
+        Write-Host "Debug JSON gemt til: $outputPath.failed" -ForegroundColor Yellow
+        throw
     }
 } else {
     Write-Host "ApiUrl og/eller Token mangler - data sendes ikke til API'et." -ForegroundColor Yellow
